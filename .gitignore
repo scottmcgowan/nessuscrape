@@ -63,3 +63,6 @@ target/
 
 # HTML test files
 *.html
+
+# Generated data
+*.csv

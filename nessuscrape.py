@@ -9,6 +9,8 @@ Author: Scott McGowan
 from bs4 import BeautifulSoup
 from os import listdir
 from os.path import isfile
+from time import strftime
+import csv
 
 
 def make_soup(fname):
@@ -57,6 +59,16 @@ def data_from_soup(soup_list):
     return hosts
 
 
+def write_csv(hosts, fname=None):
+    if not fname:
+        fname = 'Nessus_IP_Inventory_{}.csv'.format(strftime('%Y-%M-%d_%H.%M.%S'))
+    with open(fname, 'w', newline='') as csvfile:
+        host_file = csv.writer(csvfile)
+        for host in hosts:
+            host_file.writerow(host)
+    return
+
+
 def main():
     print('Running...\n')
 
@@ -91,11 +103,15 @@ def main():
 
         host_results = data_from_soup(hosts)
 
-        # just for testing
-        for i, host in enumerate(host_results):
-            print(i, host)
+        # TODO: Selecting data needs to be parameterized and much more robust
+        for host in host_results:
+            host[:] = host[3::2]  # Selecting what data to keep
 
-        # TODO: do something with the data, like tidy it and save to csv
+        write_csv(host_results)
+
+        # just for testing
+        # for i, host in enumerate(host_results):
+        #     print(i, host)
 
     else:
         print("No HTML files found in working dir, exiting.\n")
