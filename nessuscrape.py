@@ -1,7 +1,7 @@
 """
 Scrape a Nessus HTML scan report file for host information
 
-Alpha release, don't bother.
+Alpha release - probably safe to use, but not necessarily useful.
 
 Author: Scott McGowan
 """
@@ -27,8 +27,8 @@ def make_soup(fname):
     with open(fname) as fp:
         first_line = fp.readline().strip()
         if 'Nessus Scan Report' not in first_line:
-            print('\nNot a well-formed Nessus exported HTML file... Aborting')
-            return host_results
+            print('Not a well-formed Nessus exported HTML file... Aborting')
+            return
         temp = []
         for line in fp:
             if append_flag:
@@ -83,23 +83,30 @@ def main():
 
             while True:
                 for i, f in enumerate(files):
-                    print(i + 1, f)                   # convert to 1-based index
+                    print('  {} - {}'.format(i + 1, f))  # convert to 1-based index
 
                 try:
-                    selection = int(input("\nEnter number of file to parse: "))
-                    if 1 <= selection <= len(files):  # valid range
-                        fname = files[selection - 1]  # convert to 1-based index
+                    selection = int(input("\nEnter number of file to parse (0 to exit): "))
+                    print()
+                    if selection == 0:                   # exit condition
+                        return
+                    elif 1 <= selection <= len(files):   # valid range
+                        fname = files[selection - 1]     # convert to 1-based index
                         break
-                    else:                             # invalid range
-                        print("\nOut of bounds entry, try again.\n")
+                    else:                                # invalid range
+                        print("Out of bounds entry, try again.\n")
                         continue
-                except ValueError:                    # int cast failed
-                    print("\nNonnumeric entry, try again.\n")
+                except ValueError:                       # int cast failed
+                    print("Non-numeric entry, try again.\n")
                     continue
 
         hosts = make_soup(fname)
 
-        print('\nParsing file "{}" found {} hosts...\n'.format(fname, len(hosts)))
+        # Abort condition, hosts is falsey
+        if not hosts:
+            return
+
+        print('Parsing file "{}" found {} hosts...'.format(fname, len(hosts)))
 
         host_results = data_from_soup(hosts)
 
@@ -114,10 +121,10 @@ def main():
         #     print(i, host)
 
     else:
-        print("No HTML files found in working dir, exiting.\n")
+        print("No HTML files found in working dir, exiting.")
 
-    print('Done!\n')
     return
 
 if __name__ == '__main__':
     main()
+    print('\nDone!\n')
