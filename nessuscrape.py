@@ -1,14 +1,12 @@
 """
 Scrape a Nessus HTML scan report file for host information
-
 Alpha release - probably safe to use, but not necessarily useful.
-
 Author: Scott McGowan
 """
 
 from bs4 import BeautifulSoup
 from os import listdir
-from os.path import isfile
+import os.path
 from time import strftime
 import csv
 
@@ -28,7 +26,7 @@ def make_soup(fname):
         first_line = fp.readline().strip()
         if 'Nessus Scan Report' not in first_line:
             print('Not a well-formed Nessus exported HTML file... Aborting')
-            return
+            return None
         temp = []
         for line in fp:
             if append_flag:
@@ -48,20 +46,23 @@ def make_soup(fname):
 
 def data_from_soup(soup_list):
     """
-    Extract data from the soup objects into a list of lists
+    Extract data from the soup objects into a list of dicts
     """
     hosts = []
     for soup in soup_list:
-        host = []
-        for text in soup.find_all('span'):
-            host.append(text.get_text())
+        host = {}
+        spans = soup.find_all('span')
+        for i in range(len(spans))[::2]:
+            host[spans[i].get_text()] = spans[i+1].get_text()
         hosts.append(host)
     return hosts
 
 
 def write_csv(hosts, fname=None):
     if not fname:
-        fname = 'Nessus_IP_Inventory_{}.csv'.format(strftime('%Y-%M-%d_%H.%M.%S'))
+        fname = 'Nessus_IP_Inventory_{}.csv'.format(strftime('%Y-%m-%d_%H.%M.%S'))
+    fname = os.path.join('results', fname)
+    os.makedirs(os.path.dirname(fname), exist_ok=True)
     with open(fname, 'w', newline='') as csvfile:
         host_file = csv.writer(csvfile)
         for host in hosts:
@@ -73,7 +74,7 @@ def main():
     print('Running...\n')
 
     # get .html files from working dir
-    files = [f for f in listdir() if isfile(f) and f.endswith(".html")]
+    files = [f for f in listdir() if os.path.isfile(f) and f.endswith(".html")]
 
     if files:
         fname = files[0]
@@ -108,11 +109,12 @@ def main():
 
         print('Parsing file "{}" found {} hosts...'.format(fname, len(hosts)))
 
-        host_results = data_from_soup(hosts)
-
-        # TODO: Selecting data needs to be parameterized and much more robust
-        for host in host_results:
-            host[:] = host[3::2]  # Selecting what data to keep
+        host_results = []
+        for host_dict in data_from_soup(hosts):
+            host = []
+            for key in ['DNS Name:', 'IP:', 'OS:']:
+                host.append(host_dict.get(key, 'N/A'))
+            host_results.append(host)
 
         write_csv(host_results)
 
