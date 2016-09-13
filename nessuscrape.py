@@ -21,7 +21,7 @@ def make_soup(fname):
         # TODO: Move this validation to identify_file()... or maybe not?
         first_line = fp.readline().strip()
         if 'Nessus Scan Report' not in first_line:
-            print('Not a well-formed Nessus exported HTML file... Aborting')
+            print('Not a well-formed Nessus exported HTML file... Aborting\n')
             return None
 
         switch = {0:make_exec_soup, 1:make_vuln_soup}
@@ -160,52 +160,52 @@ def main():
     # get .html files from working dir
     files = [f for f in listdir() if os.path.isfile(f) and f.endswith('.html')]
 
-    if files:
-        fname = files[0]
+    if not files:
+        print('No HTML files found in working dir, exiting.\n')
+        return
 
-        if len(files) > 1:
-            print('Multiple HTML files found in working dir:\n')
+    fname = files[0]
 
-            # CLI selection loop
-            while True:
-                for i, f in enumerate(files):
-                    print('  {} - {}'.format(i + 1, f))  # convert to 1-based index
+    if len(files) > 1:
+        print('Multiple HTML files found in working dir:\n')
 
-                try:
-                    selection = int(input('\nEnter number of file to parse (0 to exit): '))
-                    print()
-                    if selection == 0:                   # exit condition
-                        return
-                    elif 1 <= selection <= len(files):   # valid range
-                        fname = files[selection - 1]     # convert to 1-based index
-                        break
-                    else:                                # invalid range
-                        print('Out of bounds entry, try again.\n')
-                        continue
-                except ValueError:                       # int cast failed
-                    print('\nNon-numeric entry, try again.\n')
+        # CLI selection loop
+        while True:
+            for i, f in enumerate(files):
+                print('  {} - {}'.format(i + 1, f))  # convert to 1-based index
+
+            try:
+                selection = int(input('\nEnter number of file to parse (0 to exit): '))
+                print()
+                if selection == 0:                   # exit condition
+                    return
+                elif 1 <= selection <= len(files):   # valid range
+                    fname = files[selection - 1]     # convert to 1-based index
+                    break
+                else:                                # invalid range
+                    print('Out of bounds entry, try again.\n')
                     continue
+            except ValueError:                       # int cast failed
+                print('\nNon-numeric entry, try again.\n')
+                continue
 
-        hosts = make_soup(fname)
+    hosts = make_soup(fname)
 
-        # Abort condition, hosts is falsey
-        if not hosts:
-            print('No hosts found! Exiting...')
-            return
+    # Abort condition, hosts is falsey
+    if not hosts:
+        print('No hosts found! Exiting...\n')
+        return
 
-        print('Parsing file "{}" found {} hosts...'.format(fname, len(hosts)))
+    print('Parsing file "{}" found {} hosts...\n'.format(fname, len(hosts)))
 
-        write_csv(hosts)
+    write_csv(hosts)
 
-        # just for testing
-        # for i, host in enumerate(hosts):
-        #     print(i, host)
-
-    else:
-        print('No HTML files found in working dir, exiting.')
+    # just for testing
+    # for i, host in enumerate(hosts):
+    #     print(i, host)
 
     return
 
 if __name__ == '__main__':
     main()
-    print('\nDone!\n')
+    print('Done!\n')
